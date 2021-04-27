@@ -8,6 +8,7 @@ MODULE_OBJS := \
 	coroutines.o \
 	dcl.o \
 	debug.o \
+	dosexe.o \
 	error.o \
 	events.o \
 	file.o \
