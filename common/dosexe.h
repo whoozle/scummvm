@@ -47,6 +47,11 @@ namespace Common {
 
 		void read(SeekableReadStream *stream);
 		void write(SeekableWriteStream *stream) const;
+		bool valid() const;
+	};
+
+	struct MzExecutable {
+		static SeekableReadStream *unpackLzExe(SeekableReadStream *src);
 	};
 }
 
