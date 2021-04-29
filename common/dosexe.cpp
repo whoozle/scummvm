@@ -68,6 +68,10 @@ namespace Common {
 		return signature == 0x5a4d;
 	}
 
+	void MZHeader::updateSize() {
+		headerSize = relocationCount * 4 + 0x1c;
+		headerSize = (headerSize + 15) / 16;
+	}
 
 	SeekableReadStream *MzExecutable::unpackLzExe(SeekableReadStream *src) {
 		src->seek(0);
@@ -77,6 +81,7 @@ namespace Common {
 			warning("invalid header signature");
 			return nullptr;
 		}
+		debug("LZEXE: packed exe mem min: 0x%06x, max: 0x%06x", header.minMemory * 0x10, header.maxMemory * 0x10);
 		auto loaderOffset = header.initCS * 0x10 + header.headerSize * 0x10;
 		debug("LZEXE: loader offset: %08x", loaderOffset);
 		src->seek(loaderOffset);
@@ -137,7 +142,6 @@ namespace Common {
 				}
 			}
 		}
-		Common::hexdump(unpackedData.data(), unpackedData.size());
 
 		SeekableSubReadStream packedRelocs(src, loaderOffset + 0x158, src->size());
 		debug("LZEXE: compressed relocations size: %u", packedRelocs.size());
@@ -160,6 +164,94 @@ namespace Common {
 			relocs.push_back(offset);
 		}
 
-		return nullptr;
+		header.relocationCount = relocs.size();
+		header.updateSize();
+
+		auto fileSize = header.headerSize * 16 + unpackedData.size();
+		debug("LZEXE: unpacked file size: %u, %+d", fileSize, unpackedData.size() - packedData.size());
+
+		header.totalPages = (fileSize + 0x1ff) / 0x200;
+		header.lastPageBytes = fileSize & 0x1ff;
+		header.minMemory = (header.minMemory + unpackedData.size() - packedData.size() + 15) / 16;
+		header.checksum = 0;
+		header.overlayNumber = 0;
+		header.relocationTableOffset = 0x1c;
+
+		header.initCS = exeCS;
+		header.initIP = exeIP;
+		header.initSS = exeSS;
+		header.initSP = exeSP;
+
+		auto unpackedExe = new Common::MemoryWriteStreamDynamic(DisposeAfterUse::NO);
+
+		header.write(unpackedExe);
+		for(auto reloc : relocs) {
+			unpackedExe->writeUint16LE(reloc & 0x0f);
+			unpackedExe->writeUint16LE(reloc >> 4);
+		}
+		unsigned padding = header.headerSize * 16 - unpackedExe->size();
+		while(padding--)
+			unpackedExe->writeByte(0);
+
+		unpackedExe->write(unpackedData.data(), unpackedData.size());
+
+		return new Common::MemoryReadStream(unpackedExe->getData(), unpackedExe->size(), DisposeAfterUse::YES);
+	}
+
+	bool MzExecutable::load(SeekableReadStream *src)
+	{
+		debug("LOADING EXE");
+		MZHeader header;
+		src->seek(0);
+		header.read(src);
+		if (!header.valid()) {
+			warning("invalid MZ header");
+			return false;
+		}
+
+		src->seek(header.relocationTableOffset);
+		Common::Array<uint32> relocations;
+		relocations.reserve(header.relocationCount);
+		for(uint16 i = 0; i < header.relocationCount; ++i) {
+			uint32 offset = src->readUint16LE();
+			offset += static_cast<uint32>(src->readUint16LE()) << 4;
+			debug("relocation at %06x", offset);
+			relocations.push_back(offset);
+		}
+
+		Common::Array<bool> segmentPresent(0x10000, false);
+		segmentPresent[0] = true;
+
+		auto exeStart = header.headerSize * 16;
+		auto exeSize = src->size() - exeStart;
+		for(auto & reloc : relocations) {
+			src->seek(exeStart + reloc);
+			auto seg = src->readUint16LE();
+			segmentPresent[seg] = true;
+		}
+
+		for(uint i = 0; i < segmentPresent.size(); ++i) {
+			if (segmentPresent[i])
+				segments.push_back(i);
+		}
+
+		for(uint i = 0; i < segments.size(); ++i) {
+			auto segment = segments[i];
+			int32 begin = segment << 4;
+			if (begin >= exeSize)
+				continue;
+
+			int32 end = i + 1 < segments.size()? segments[i + 1] << 4: exeSize;
+			if (end > exeSize)
+				end = exeSize;
+
+			debug("segment: %06x - %06x, size: %d", begin, end, end - begin);
+			src->seek(exeStart + begin);
+			auto & data = segmentData[segment];
+			data.resize(end - begin);
+			src->read(data.data(), data.size());
+		}
+
+		return true;
 	}
 }

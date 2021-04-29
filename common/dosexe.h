@@ -24,6 +24,7 @@
 #define COMMON_DOSEXE_H
 
 #include "common/scummsys.h"
+#include "common/hashmap.h"
 
 namespace Common {
 	class SeekableReadStream;
@@ -47,11 +48,17 @@ namespace Common {
 
 		void read(SeekableReadStream *stream);
 		void write(SeekableWriteStream *stream) const;
+		void updateSize();
 		bool valid() const;
 	};
 
 	struct MzExecutable {
 		static SeekableReadStream *unpackLzExe(SeekableReadStream *src);
+
+		Common::Array<uint16> segments;
+		Common::HashMap<uint16, Common::Array<uint8>> segmentData;
+
+		bool load(SeekableReadStream *src);
 	};
 }
 
