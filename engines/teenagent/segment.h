@@ -23,6 +23,7 @@
 #ifndef TEENAGENT_SEGMENT_H
 #define TEENAGENT_SEGMENT_H
 
+#include "common/array.h"
 #include "common/stream.h"
 #include "common/endian.h"
 
@@ -36,6 +37,7 @@ public:
 	Segment() : _size(0), _data(0) {}
 	~Segment();
 
+	void read(const Common::Array<uint8> &data);
 	void read(Common::ReadStream *s, uint32 _size);
 
 	inline byte get_byte(uint32 offset) const {

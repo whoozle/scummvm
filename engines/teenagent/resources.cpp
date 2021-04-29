@@ -114,13 +114,21 @@ bool Resources::loadArchives(const ADGameDescription *gd) {
 	delete exe_file;
 	exe_file = nullptr;
 
-	if (!unpacked_exe_file)
+	if (!unpacked_exe_file) {
+		warning("cannot unpack exe file");
 		return false;
+	}
 
 	Common::MzExecutable exe;
 	bool ok = exe.load(unpacked_exe_file);
 	delete unpacked_exe_file;
 	if (!ok) {
+		warning("cannot parse exe file");
+		return false;
+	}
+
+	if (exe.segments.size() < 4) {
+		warning("unpacked teenagnt.exe file should have at least 4 segments");
 		return false;
 	}
 
@@ -152,7 +160,7 @@ bool Resources::loadArchives(const ADGameDescription *gd) {
 
 	dat->skip(CSEG_SIZE);
 	dseg.read(dat, DSEG_SIZE);
-	eseg.read(dat, ESEG_SIZE);
+	eseg.read(exe.segmentData[exe.segments[3]]);
 	delete dat;
 
 	precomputeDialogOffsets();

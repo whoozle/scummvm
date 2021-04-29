@@ -26,6 +26,14 @@
 
 namespace TeenAgent {
 
+void Segment::read(const Common::Array<uint8> &data) {
+	delete[] _data;
+	_data = nullptr;
+	_size = data.size();
+	_data = new byte[_size];
+	memcpy(_data, data.data(), _size);
+}
+
 void Segment::read(Common::ReadStream *stream, uint32 s) {
 	_size = s;
 	_data = new byte[_size];
