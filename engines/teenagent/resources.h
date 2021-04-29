@@ -1165,9 +1165,11 @@ class Resources {
 public:
 	Resources();
 	~Resources();
+
 	bool loadArchives(const ADGameDescription *gd);
 
 	void loadOff(Graphics::Surface &surface, byte *palette, int id);
+
 	Common::SeekableReadStream *loadLan(uint32 id) const;
 	Common::SeekableReadStream *loadLan000(uint32 id) const;
 
@@ -1191,6 +1193,7 @@ public:
 
 	Segment eseg;
 private:
+	Common::File *open(const Common::String &filename);
 	void precomputeDialogOffsets();
 
 	Common::Array<uint16> dialogOffsets;

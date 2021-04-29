@@ -26,6 +26,7 @@
 #include "common/textconsole.h"
 #include "common/translation.h"
 #include "common/zlib.h"
+#include "common/dosexe.h"
 
 namespace TeenAgent {
 
@@ -89,18 +90,41 @@ void Resources::precomputeDialogOffsets() {
 		debug(1, "\tDialog #%d: Offset 0x%04x", i, dialogOffsets[i]);
 }
 
-bool Resources::loadArchives(const ADGameDescription *gd) {
-	Common::File *dat_file = new Common::File();
-	Common::String filename = "teenagent.dat";
-	if (!dat_file->open(filename.c_str())) {
-		delete dat_file;
+Common::File *Resources::open(const Common::String &filename) {
+	Common::File *file = new Common::File();
+	if (!file->open(filename.c_str())) {
+		delete file;
 
 		const char *msg = _s("Unable to locate the '%s' engine data file.");
 		Common::U32String errorMessage = Common::U32String::format(_(msg), filename.c_str());
 		warning(msg, filename.c_str());
 		GUIErrorMessage(errorMessage);
+		return nullptr;
+	} else
+		return file;
+}
+
+bool Resources::loadArchives(const ADGameDescription *gd) {
+
+	Common::File *exe_file = open("teenagnt.exe");
+	if (!exe_file)
+		return false;
+
+	auto unpacked_exe_file = Common::MzExecutable::unpackLzExe(exe_file);
+	delete exe_file;
+	exe_file = nullptr;
+
+	if (!unpacked_exe_file)
+		return false;
+
+	Common::MzExecutable exe;
+	bool ok = exe.load(unpacked_exe_file);
+	delete unpacked_exe_file;
+	if (!ok) {
 		return false;
 	}
+
+	Common::File *dat_file = open("teenagent.dat");
 
 	// teenagent.dat used to be compressed with zlib compression. The usage of
 	// zlib here is no longer needed, and it's maintained only for backwards
