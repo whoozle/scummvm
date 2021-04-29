@@ -99,7 +99,7 @@ static const ADGameDescription teenAgentGameDescriptions[] = {
 	},
 	{ // Czech Floppy
 		"teenagent",
-		_s("Missing game code"), // Reason for being unsupported
+		"",
 		{
 			{"off.res",     0, "c5263a726d038bb6780a40eb3b83cc87", 2720432},
 			{"on.res",      0, "a0d5e5bbf6fab4bdc7f4094ed85f9639", 153907},
@@ -115,8 +115,8 @@ static const ADGameDescription teenAgentGameDescriptions[] = {
 		},
 		Common::CZ_CZE,
 		Common::kPlatformDOS,
-		ADGF_UNSUPPORTED,
-		GUIO1(GUIO_NOMIDI)
+		ADGF_NO_FLAGS,
+		GUIO2(GUIO_NOSPEECH, GUIO_NOMIDI)
 	},
 	{ // Czech CD
 		"teenagent",
