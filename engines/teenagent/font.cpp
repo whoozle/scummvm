@@ -30,6 +30,7 @@
 #include "common/stream.h"
 #include "common/textconsole.h"
 #include "common/ptr.h"
+#include "common/file.h"
 #include "graphics/surface.h"
 
 namespace TeenAgent {
@@ -41,7 +42,7 @@ Font::~Font() {
 	delete[] _data;
 }
 
-void Font::load(const Pack &pack, int id, byte height, byte widthPack) {
+void Font::load(const Pack &pack, int id, byte height, byte widthPack, Common::Language language) {
 	delete[] _data;
 	_data = NULL;
 
@@ -55,9 +56,26 @@ void Font::load(const Pack &pack, int id, byte height, byte widthPack) {
 
 	_height = height;
 	_widthPack = widthPack;
+	_language = language;
 }
 
 uint Font::render(Graphics::Surface *surface, int x, int y, char c, byte color) {
+	if (_language == Common::Language::RU_RUS) {
+		static const uint8 translationTable[64] = {
+			0x5f, 0x41, 0x42, 0x57, 0x45, 0x46, 0x55, 0x44,
+			0x56, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f,
+			0x50, 0x60, 0x51, 0x52, 0x53, 0x54, 0x43, 0x47,
+			0x5d, 0x5c, 0x48, 0x59, 0x5e, 0x5a, 0x58, 0x5f,
+			0x7f, 0x61, 0x62, 0x77, 0x65, 0x66, 0x75, 0x64,
+			0x76, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f,
+			0x70, 0x80, 0x71, 0x72, 0x73, 0x74, 0x63, 0x67,
+			0x7d, 0x7c, 0x68, 0x79, 0x7e, 0x7a, 0x78, 0x7f,
+		};
+
+		if (c >= 0x40)
+			c = translationTable[c - 0x40];
+	}
+
 	unsigned idx = (unsigned char)c;
 	if (idx < 0x20 || idx >= 0x81) {
 		debugC(0, kDebugFont, "unhandled char 0x%02x", idx);

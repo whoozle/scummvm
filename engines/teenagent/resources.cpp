@@ -22,6 +22,7 @@
 
 #include "teenagent/resources.h"
 #include "teenagent/teenagent.h"
+#include "engines/advancedDetector.h"
 #include "common/debug.h"
 #include "common/textconsole.h"
 #include "common/translation.h"
@@ -169,8 +170,8 @@ bool Resources::loadArchives(const ADGameDescription *gd) {
 
 	FilePack varia;
 	varia.open("varia.res");
-	font7.load(varia, 7, 11, 1);
-	font8.load(varia, 8, 31, 0);
+	font7.load(varia, 7, 11, 1, gd->language);
+	font8.load(varia, 8, 31, 0, gd->language);
 	varia.close();
 
 	off.open("off.res");

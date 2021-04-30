@@ -23,6 +23,7 @@
 #ifndef TEENAGENT_FONT_H
 #define TEENAGENT_FONT_H
 
+#include "common/language.h"
 #include "common/str.h"
 #include "graphics/surface.h"
 
@@ -35,7 +36,7 @@ public:
 	Font();
 	~Font();
 
-	void load(const Pack &pack, int id, byte height, byte widthPack);
+	void load(const Pack &pack, int id, byte height, byte widthPack, Common::Language language);
 	uint render(Graphics::Surface *surface, int x, int y, const Common::String &str, byte color, bool showGrid = false);
 	uint render(Graphics::Surface *surface, int x, int y, char c, byte color);
 	static void grid(Graphics::Surface *surface, int x, int y, int w, int h, byte color);
@@ -47,6 +48,7 @@ private:
 
 	byte _gridColor, _shadowColor;
 	byte _height, _widthPack;
+	Common::Language _language;
 };
 
 } // End of namespace TeenAgent
