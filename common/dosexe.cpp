@@ -73,7 +73,7 @@ namespace Common {
 		headerSize = (headerSize + 15) / 16;
 	}
 
-	SeekableReadStream *MzExecutable::unpackLzExe(SeekableReadStream *src) {
+	SeekableReadStream *MzExecutable::unpackLzExe(SeekableReadStream *src, uint32 expectedSignature) {
 		src->seek(0);
 		MZHeader header;
 		header.read(src);
@@ -81,17 +81,22 @@ namespace Common {
 			warning("invalid header signature");
 			return nullptr;
 		}
-		debug("LZEXE: packed exe mem min: 0x%06x, max: 0x%06x", header.minMemory * 0x10, header.maxMemory * 0x10);
+		uint32 signature = src->readUint32LE();
+		debug(3, "LZEXE: packed exe mem min: 0x%06x, max: 0x%06x, signature: %08x", header.minMemory * 0x10, header.maxMemory * 0x10, signature);
+		if (signature != expectedSignature) {
+			debug(3, "LZEXE: unexpected signature");
+			return nullptr;
+		}
 		auto loaderOffset = header.initCS * 0x10 + header.headerSize * 0x10;
-		debug("LZEXE: loader offset: %08x", loaderOffset);
+		debug(3, "LZEXE: loader offset: %08x", loaderOffset);
 		src->seek(loaderOffset);
 		auto exeIP = src->readUint16LE();
 		auto exeCS = src->readUint16LE();
 		auto exeSP = src->readUint16LE();
 		auto exeSS = src->readUint16LE();
-		debug("LZEXE: entry point: %04x:%04x, stack: %04x:%04x", exeCS, exeIP, exeSS, exeSP);
+		debug(3, "LZEXE: entry point: %04x:%04x, stack: %04x:%04x", exeCS, exeIP, exeSS, exeSP);
 		SeekableSubReadStream packedData(src, 0x20, loaderOffset);
-		debug("LZEXE: compressed data size: %u", packedData.size());
+		debug(3, "LZEXE: compressed data size: %u", packedData.size());
 
 		Common::Array<uint8> unpackedData;
 		uint bitCount = 16;
@@ -144,7 +149,7 @@ namespace Common {
 		}
 
 		SeekableSubReadStream packedRelocs(src, loaderOffset + 0x158, src->size());
-		debug("LZEXE: compressed relocations size: %u", packedRelocs.size());
+		debug(3, "LZEXE: compressed relocations size: %u", packedRelocs.size());
 
 		Common::Array<uint> relocs;
 		uint32 offset = 0;
@@ -168,7 +173,7 @@ namespace Common {
 		header.updateSize();
 
 		auto fileSize = header.headerSize * 16 + unpackedData.size();
-		debug("LZEXE: unpacked file size: %u, %+d", fileSize, unpackedData.size() - packedData.size());
+		debug(3, "LZEXE: unpacked file size: %u, %+d", fileSize, unpackedData.size() - packedData.size());
 
 		header.totalPages = (fileSize + 0x1ff) / 0x200;
 		header.lastPageBytes = fileSize & 0x1ff;
@@ -200,7 +205,7 @@ namespace Common {
 
 	bool MzExecutable::load(SeekableReadStream *src)
 	{
-		debug("LOADING EXE");
+		debug(3, "Loading executable...");
 		MZHeader header;
 		src->seek(0);
 		header.read(src);
@@ -215,7 +220,7 @@ namespace Common {
 		for(uint16 i = 0; i < header.relocationCount; ++i) {
 			uint32 offset = src->readUint16LE();
 			offset += static_cast<uint32>(src->readUint16LE()) << 4;
-			debug("relocation at %06x", offset);
+			debug(3, "relocation at %06x", offset);
 			relocations.push_back(offset);
 		}
 
@@ -245,7 +250,7 @@ namespace Common {
 			if (end > exeSize)
 				end = exeSize;
 
-			debug("segment: %06x - %06x, size: %d", begin, end, end - begin);
+			debug(3, "segment: %06x - %06x, size: %d", begin, end, end - begin);
 			src->seek(exeStart + begin);
 			auto & data = segmentData[segment];
 			data.resize(end - begin);

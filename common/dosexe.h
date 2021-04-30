@@ -53,7 +53,7 @@ namespace Common {
 	};
 
 	struct MzExecutable {
-		static SeekableReadStream *unpackLzExe(SeekableReadStream *src);
+		static SeekableReadStream *unpackLzExe(SeekableReadStream *src, uint32 expectedSignature);
 
 		Common::Array<uint16> segments;
 		Common::HashMap<uint16, Common::Array<uint8>> segmentData;

@@ -110,18 +110,21 @@ bool Resources::loadArchives(const ADGameDescription *gd) {
 	if (!exe_file)
 		return false;
 
-	auto unpacked_exe_file = Common::MzExecutable::unpackLzExe(exe_file);
-	delete exe_file;
-	exe_file = nullptr;
+	auto unpacked_exe_file = Common::MzExecutable::unpackLzExe(exe_file, 0x01090a0c);
 
 	if (!unpacked_exe_file) {
-		warning("cannot unpack exe file");
-		return false;
+		//maybe unpacked
+		unpacked_exe_file = exe_file;
+		exe_file = nullptr;
 	}
+	delete exe_file;
+	exe_file = nullptr;
 
 	Common::MzExecutable exe;
 	bool ok = exe.load(unpacked_exe_file);
 	delete unpacked_exe_file;
+	unpacked_exe_file = nullptr;
+
 	if (!ok) {
 		warning("cannot parse exe file");
 		return false;
