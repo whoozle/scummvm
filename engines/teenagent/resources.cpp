@@ -62,7 +62,6 @@ quick note on varia resources:
 
 #define CSEG_SIZE 46000 // 0xb3b0
 #define DSEG_SIZE 59280 // 0xe790
-#define ESEG_SIZE 35810 // 0x8be2
 
 void Resources::precomputeDialogOffsets() {
 	dialogOffsets.push_back(0);
